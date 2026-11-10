@@ -51,3 +51,29 @@ Never put provider API keys in frontend code or commit them to GitHub. Store sec
 - [ ] FFmpeg rendering workers
 - [ ] MP4 preview and export
 - [ ] Authentication, quotas, and deployment
+
+
+## Local AI backend (free, self-hosted)
+
+The frontend now calls a Node API at `http://localhost:8787`. The API uses Ollama on the same machine for script and scene-plan generation, without a paid cloud API key.
+
+1. Install Node.js 20+ and Ollama on a computer.
+2. In a terminal, run `ollama pull llama3.2`.
+3. In one terminal: `cd server && npm install && cp .env.example .env && npm run dev`.
+4. In another terminal, at the repository root: `npm install && npm run dev`.
+5. Open the Vite URL and generate a script.
+
+The local API is not hosted by GitHub Pages. To use the site from a phone, deploy the frontend and API separately and keep the API private/authenticated. Ollama must run on the backend host; do not expose its port publicly.
+
+### Current implementation status
+
+- [x] Frontend topic/manual and auto-topic modes
+- [x] Local Ollama health check and structured script/scene-plan generation
+- [x] Script and scene preview in the UI
+- [ ] Durable projects and background job queue
+- [ ] Free/local text-to-speech integration
+- [ ] Visual asset generation / licensed media sourcing
+- [ ] FFmpeg landscape and portrait MP4 rendering
+- [ ] Hosted deployment, authentication and usage limits
+
+**Important:** This is not yet a one-click finished-video generator. The current working AI stage creates the script and scene plan only. Voiceover, visual assets and MP4 rendering still need implementation and local compute/storage.
