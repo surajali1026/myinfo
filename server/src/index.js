@@ -41,12 +41,15 @@ app.post('/api/scripts', requireAuth, async (req, res) => {
 
 app.post('/api/images', requireAuth, async (req, res) => {
   const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
+  const vertical = req.body?.format === 'Vertical (9:16)';
+  const width = vertical ? 576 : 1024;
+  const height = vertical ? 1024 : 576;
   if (!prompt || prompt.length > 3000) return res.status(400).json({ error: 'Image prompt must be 1–3000 characters.' });
   const key = process.env.POLLINATIONS_API_KEY || '';
   if (!key) return res.status(503).json({ error: 'AI image generation is not configured.', detail: 'Add a Pollinations API key as POLLINATIONS_API_KEY in Render Environment Variables. Image generation may consume account credits; it is not guaranteed free.' });
   try {
     const model = process.env.POLLINATIONS_IMAGE_MODEL || 'flux';
-    const url = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?model=' + encodeURIComponent(model) + '&width=1024&height=1024&nologo=true';
+    const url = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?model=' + encodeURIComponent(model) + '&width=' + width + '&height=' + height + '&nologo=true';
     const imageResponse = await fetch(url, { headers: { Authorization: 'Bearer ' + key }, signal: AbortSignal.timeout(180000) });
     if (!imageResponse.ok) {
       const detail = (await imageResponse.text().catch(() => '')).slice(0, 400);
