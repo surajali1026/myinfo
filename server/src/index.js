@@ -16,13 +16,13 @@ app.get('/api/health', async (_req, res) => {
 });
 
 app.post('/api/scripts', async (req, res) => {
-  const { topic = '', language = 'Hindi', style = 'Mixed styles', duration = '2 minutes', format = 'Both formats' } = req.body || {};
+  const { topic = '', language = 'Hindi', style = 'Mixed styles', duration = '2 minutes', format = 'Both formats', voicePreference = 'Choose for each video' } = req.body || {};
   if (typeof topic !== 'string' || topic.length > 500) return res.status(400).json({ error: 'Topic must be text under 500 characters.' });
   const ready = await ollamaReady();
   if (!ready.available) return res.status(503).json({ error: 'Local AI is not available.', detail: ready.reason, setup: 'Install Ollama on the machine running this API, download a model, then restart the API.' });
   if (!ready.modelInstalled) return res.status(503).json({ error: 'The configured Ollama model is not installed.', detail: 'Run: ollama pull ' + ready.model });
   try {
-    const plan = await generateVideoPlan({ topic, language, style, duration, format });
+    const plan = await generateVideoPlan({ topic, language, style, duration, format, voicePreference });
     res.json({ ok: true, plan, next: 'Script generated. Voice, visual assets and FFmpeg rendering are not configured yet.' });
   } catch (error) {
     console.error('[script-generation]', error);
