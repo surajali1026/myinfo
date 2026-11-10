@@ -28,3 +28,9 @@ export async function generateSceneImage(prompt, format = 'YouTube landscape (16
   }
   return URL.createObjectURL(await response.blob());
 }
+
+export async function generateHindiVoice(text, voice = 'female') {
+  const response = await fetch(API_BASE + '/api/voice', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, voice }) });
+  if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.detail || data.error || 'Hindi voice generation failed.'); }
+  return URL.createObjectURL(await response.blob());
+}
