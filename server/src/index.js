@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { ollamaReady, generateVideoPlan } from './ollama.js';
+import { authConfigured, login, logout, requireAuth, sessionStatus } from './auth.js';
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
@@ -10,12 +11,16 @@ app.use(helmet());
 app.use(cors({ origin: (process.env.FRONTEND_ORIGIN || 'http://localhost:5173').split(',').map(x => x.trim()) }));
 app.use(express.json({ limit: '32kb' }));
 
+app.get('/api/auth/status', sessionStatus);
+app.post('/api/auth/login', login);
+app.post('/api/auth/logout', logout);
+
 app.get('/api/health', async (_req, res) => {
   const ai = await ollamaReady();
-  res.json({ ok: true, service: 'myinfo-video-api', ai, capabilities: { scriptGeneration: ai.available && ai.modelInstalled, voiceover: false, visualGeneration: false, mp4Rendering: false } });
+  res.json({ ok: true, service: 'myinfo-video-api', ai, authConfigured: authConfigured(), capabilities: { scriptGeneration: ai.available && ai.modelInstalled, voiceover: false, visualGeneration: false, mp4Rendering: false } });
 });
 
-app.post('/api/scripts', async (req, res) => {
+app.post('/api/scripts', requireAuth, async (req, res) => {
   const { topic = '', language = 'Hindi', style = 'Mixed styles', duration = '2 minutes', format = 'Both formats', voicePreference = 'Choose for each video' } = req.body || {};
   if (typeof topic !== 'string' || topic.length > 500) return res.status(400).json({ error: 'Topic must be text under 500 characters.' });
   const ready = await ollamaReady();
