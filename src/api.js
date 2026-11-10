@@ -15,12 +15,12 @@ export async function generateScript(options) {
   return request('/api/scripts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options) });
 }
 
-export async function generateSceneImage(prompt) {
+export async function generateSceneImage(prompt, format = 'YouTube landscape (16:9)') {
   const response = await fetch(API_BASE + '/api/images', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt })
+    body: JSON.stringify({ prompt, format })
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
