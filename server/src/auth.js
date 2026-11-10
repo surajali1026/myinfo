@@ -4,6 +4,7 @@ const COOKIE = 'myinfo_session';
 const DAY = 12 * 60 * 60;
 const username = process.env.ADMIN_USERNAME || '';
 const passwordHash = process.env.ADMIN_PASSWORD_HASH || '';
+const plainPassword = process.env.ADMIN_PASSWORD || '';
 const secret = process.env.AUTH_SECRET || '';
 
 function safeEqual(a, b) {
@@ -27,12 +28,12 @@ function readCookies(header = '') {
   }));
 }
 export function authConfigured() {
-  return Boolean(username && passwordHash && secret);
+  return Boolean(username && (passwordHash || plainPassword) && secret);
 }
 export function login(req, res) {
   const { id, password } = req.body || {};
   if (!authConfigured()) return res.status(503).json({ error: 'Login is not configured on the server.' });
-  if (!safeEqual(id || '', username) || typeof password !== 'string' || !verifyPassword(password)) {
+  if (!safeEqual(id || '', username) || typeof password !== 'string' || !(plainPassword ? safeEqual(password, plainPassword) : verifyPassword(password))) {
     return res.status(401).json({ error: 'Incorrect login ID or password.' });
   }
   const payload = Buffer.from(JSON.stringify({ sub: username, exp: Math.floor(Date.now() / 1000) + DAY })).toString('base64url');
