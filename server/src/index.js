@@ -19,9 +19,23 @@ app.get('/api/auth/status', sessionStatus);
 app.post('/api/auth/login', login);
 app.post('/api/auth/logout', logout);
 
+const cloudflareImagesConfigured = () => Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN);
+
 app.get('/api/health', async (_req, res) => {
   const ai = await aiReady();
-  res.json({ ok: true, service: 'myinfo-video-api', ai, authConfigured: authConfigured(), capabilities: { scriptGeneration: ai.available, voiceover: false, visualGeneration: Boolean(process.env.POLLINATIONS_API_KEY), mp4Rendering: false } });
+  res.json({
+    ok: true,
+    service: 'myinfo-video-api',
+    ai,
+    authConfigured: authConfigured(),
+    capabilities: {
+      scriptGeneration: ai.available,
+      voiceover: false,
+      visualGeneration: cloudflareImagesConfigured(),
+      imageProvider: cloudflareImagesConfigured() ? 'Cloudflare Workers AI (FLUX.1 schnell)' : null,
+      mp4Rendering: false
+    }
+  });
 });
 
 app.post('/api/scripts', requireAuth, async (req, res) => {
@@ -38,31 +52,53 @@ app.post('/api/scripts', requireAuth, async (req, res) => {
   }
 });
 
-
 app.post('/api/images', requireAuth, async (req, res) => {
   const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
-  const vertical = req.body?.format === 'Vertical (9:16)';
-  const width = vertical ? 576 : 1024;
-  const height = vertical ? 1024 : 576;
-  if (!prompt || prompt.length > 3000) return res.status(400).json({ error: 'Image prompt must be 1–3000 characters.' });
-  const key = process.env.POLLINATIONS_API_KEY || '';
-  if (!key) return res.status(503).json({ error: 'AI image generation is not configured.', detail: 'Add a Pollinations API key as POLLINATIONS_API_KEY in Render Environment Variables. Image generation may consume account credits; it is not guaranteed free.' });
+  const format = typeof req.body?.format === 'string' ? req.body.format : '';
+  if (!prompt || prompt.length > 2048) return res.status(400).json({ error: 'Image prompt must be 1–2048 characters.' });
+
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!accountId || !token) {
+    return res.status(503).json({
+      error: 'Free image generation is not connected yet.',
+      detail: 'Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in Render Environment. Do not add a paid plan or prepaid credits.'
+    });
+  }
+
   try {
-    const model = process.env.POLLINATIONS_IMAGE_MODEL || 'flux';
-    const url = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?model=' + encodeURIComponent(model) + '&width=' + width + '&height=' + height + '&nologo=true';
-    const imageResponse = await fetch(url, { headers: { Authorization: 'Bearer ' + key }, signal: AbortSignal.timeout(180000) });
-    if (!imageResponse.ok) {
-      const detail = (await imageResponse.text().catch(() => '')).slice(0, 400);
-      return res.status(imageResponse.status === 402 ? 402 : 502).json({ error: 'Image provider request failed.', detail: detail || 'Check Pollinations account balance, key permissions and model access.' });
+    const composition = format.includes('Vertical')
+      ? ' Compose the scene for a vertical 9:16 portrait crop, with the main subject centered and safe margins.'
+      : format.includes('landscape')
+        ? ' Compose the scene for a horizontal 16:9 landscape crop, with the main subject centered and safe margins.'
+        : ' Compose the scene with the main subject centered and safe margins.';
+    const response = await fetch(
+      'https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(accountId) + '/ai/run/@cf/black-forest-labs/flux-1-schnell',
+      {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt + composition, steps: 4 }),
+        signal: AbortSignal.timeout(180000)
+      }
+    );
+    const payload = await response.json().catch(() => ({}));
+    const base64 = payload?.result?.image;
+    if (!response.ok || !payload.success || typeof base64 !== 'string' || !base64) {
+      const detail = Array.isArray(payload.errors) ? payload.errors.map(e => e.message).join('; ') : '';
+      const status = response.status === 429 ? 429 : response.status === 401 || response.status === 403 ? response.status : 502;
+      return res.status(status).json({
+        error: 'Cloudflare image generation failed.',
+        detail: detail || 'Check the Cloudflare account ID, API token permissions, and daily free Workers AI allowance. Paid usage is not enabled by this app.'
+      });
     }
-    const contentType = imageResponse.headers.get('content-type') || 'image/png';
-    if (!contentType.startsWith('image/')) return res.status(502).json({ error: 'Image provider returned an unexpected content type.' });
-    res.set('Content-Type', contentType);
+    const image = Buffer.from(base64, 'base64');
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Content-Length', String(image.length));
     res.set('Cache-Control', 'private, no-store');
-    imageResponse.body.pipeTo(new WritableStream({ write(chunk) { res.write(Buffer.from(chunk)); }, close() { res.end(); }, abort() { res.end(); } })).catch(error => { console.error('[image-generation-stream]', error); if (!res.headersSent) res.status(502).end(); });
+    return res.send(image);
   } catch (error) {
-    console.error('[image-generation]', error);
-    res.status(502).json({ error: 'Image generation failed.', detail: error.message });
+    console.error('[cloudflare-image-generation]', error);
+    return res.status(502).json({ error: 'Cloudflare image generation failed.', detail: error.name === 'TimeoutError' ? 'The image request timed out. Please try again.' : error.message });
   }
 });
 
