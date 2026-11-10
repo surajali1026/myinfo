@@ -13,7 +13,7 @@ app.use(cors({ origin: (origin, callback) => {
   if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
   return callback(new Error('Origin is not allowed by CORS.'));
 }, credentials: true }));
-app.use(express.json({ limit: '32kb' }));
+app.use(express.json({ limit: '64kb' }));
 
 app.get('/api/auth/status', sessionStatus);
 app.post('/api/auth/login', login);
@@ -56,7 +56,7 @@ app.post('/api/scripts', requireAuth, async (req, res) => {
 app.post('/api/voice', requireAuth, async (req, res) => {
   const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
   const voice = req.body?.voice === 'female' ? 'Kore' : 'Puck';
-  if (!text || text.length > 5000) return res.status(400).json({ error: 'Narration must be between 1 and 5000 characters.' });
+  if (!text || text.length > 12000) return res.status(400).json({ error: 'Narration must be between 1 and 12000 characters.' });
   const key = process.env.GEMINI_API_KEY;
   if (!key) return res.status(503).json({ error: 'Gemini API is not configured.' });
   try {
