@@ -1,4 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'https://myinfo-zulr.onrender.com').replace(/\/$/, '');
 async function request(path, options = {}) {
   const response = await fetch(API_BASE + path, { credentials: 'include', ...options });
   const data = await response.json().catch(() => ({}));
