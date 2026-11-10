@@ -28,7 +28,7 @@ npm run dev
 ## Video workflow
 
 1. User enters a topic or requests automatic topic discovery.
-2. Backend creates a structured 10–15 minute script and scene plan.
+2. Backend creates a structured 1–2 minute Hindi storytelling script and scene plan.
 3. User reviews and approves the script.
 4. Workers generate narration, visual assets, subtitles, and music.
 5. FFmpeg assembles 16:9 and 9:16 outputs.
@@ -55,7 +55,7 @@ Never put provider API keys in frontend code or commit them to GitHub. Store sec
 
 ## Local AI backend (free, self-hosted)
 
-The frontend now calls a Node API at `http://localhost:8787`. The API uses Ollama on the same machine for script and scene-plan generation, without a paid cloud API key.
+The frontend currently calls a Node API at `http://localhost:8787`. The API uses Ollama on the same machine for Hindi script and scene-plan generation. This local backend requires a computer and is not suitable for the phone-only target.
 
 1. Install Node.js 20+ and Ollama on a computer.
 2. In a terminal, run `ollama pull llama3.2`.
@@ -76,4 +76,12 @@ The local API is not hosted by GitHub Pages. To use the site from a phone, deplo
 - [ ] FFmpeg landscape and portrait MP4 rendering
 - [ ] Hosted deployment, authentication and usage limits
 
-**Important:** This is not yet a one-click finished-video generator. The current working AI stage creates the script and scene plan only. Voiceover, visual assets and MP4 rendering still need implementation and local compute/storage.
+**Important:** This is not yet a one-click finished-video generator. The current AI stage creates a Hindi script and scene plan only. Voiceover, visual assets and MP4 rendering still need implementation and local compute/storage.
+
+
+## Updated short-story direction (November 2026)
+
+- Story and narration language: Hindi only (Devanagari).
+- Video duration choices: 1 minute or 2 minutes.
+- Target narration length: approximately 120–150 Hindi words for 1 minute and 240–300 for 2 minutes.
+- The current Ollama backend still requires a computer. A phone-friendly hosted generation and rendering workflow has not yet been implemented.
