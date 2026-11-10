@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { generateScript, getApiHealth } from './api.js';
+import { generateScript, getApiHealth, getAuthStatus, login, logout } from './api.js';
 import {Clapperboard, WandSparkles, FolderOpen, Settings, Play, Clock3, Film, Mic2, Subtitles, Music2, ChevronRight, Sparkles, Plus, Download, Menu, X, Youtube, Smartphone, MonitorPlay, CheckCircle2} from 'lucide-react';
 
 const initialProjects=[{title:'The Lost Cities of Ancient Egypt',type:'Documentary',duration:'12:34',status:'Ready',date:'Today'},{title:'How the Universe Began',type:'Explainer',duration:'10:18',status:'Draft',date:'Yesterday'}];
-export default function App(){
+function StudioApp({ onLogout }){
  const [page,setPage]=useState('Create video'); const [topic,setTopic]=useState(''); const [mode,setMode]=useState('I have a topic'); const [style,setStyle]=useState('Mixed styles'); const [format,setFormat]=useState('Both formats'); const [duration,setDuration]=useState('2 minutes'); const [voicePreference,setVoicePreference]=useState('Choose for each video'); const [projects,setProjects]=useState([]); const [notice,setNotice]=useState(''); const [busy,setBusy]=useState(false); const [plan,setPlan]=useState(null); const [apiStatus,setApiStatus]=useState('Checking local AI backend…');
  useEffect(()=>{getApiHealth().then(x=>setApiStatus(x.ai?.modelInstalled?'Local AI ready':'Backend online; local model needs setup')).catch(()=>setApiStatus('Backend offline — start the API server'));},[]);
  const nav=[['Create video',WandSparkles],['My projects',FolderOpen],['Settings',Settings]];
@@ -20,4 +20,19 @@ export default function App(){
  <div className="section-title recent-title"><div><h2>Recent projects</h2><p>Pick up where you left off.</p></div><button className="text-button" onClick={()=>setPage('My projects')}>View all <ChevronRight size={15}/></button></div><div className="project-row">{projects.slice(0,2).map((p,i)=><div className="project-card" key={p.title}><div className={'project-thumb thumb-'+i}><Play size={22}/><span>{p.duration}</span></div><div className="project-info"><b>{p.title}</b><small>{p.type} · {p.date}</small></div><span className={'project-status '+(p.status==='Ready'?'ready':'')}>{p.status}</span></div>)}</div>
  </div>:page==='My projects'?<div className="content"><div className="page-heading"><div><div className="eyebrow">YOUR LIBRARY</div><h1>My projects</h1><p>All your video ideas, drafts and finished exports.</p></div><button className="primary compact" onClick={()=>setPage('Create video')}><Plus size={16}/> New video</button></div><div className="project-list">{projects.map((p,i)=><div className="project-card" key={p.title}><div className={'project-thumb thumb-'+(i%2)}><Play size={22}/><span>{p.duration}</span></div><div className="project-info"><b>{p.title}</b><small>{p.type} · {p.date}</small></div><span className={'project-status '+(p.status==='Ready'?'ready':'')}>{p.status}</span></div>)}</div></div>:<div className="content"><div className="page-heading"><div><div className="eyebrow">PREFERENCES</div><h1>Settings</h1><p>Configure your video studio and connected AI services.</p></div></div><div className="form-card settings-card"><h3>AI service connections</h3><p>API keys will be configured securely on the backend. Never paste secret keys into frontend code or GitHub.</p>{['Script generation API','Text-to-speech provider','Image / video generation provider','Cloud storage'].map(x=><div className="setting-row" key={x}><span>{x}</span><span className="pending">Not connected</span></div>)}<div className="notice">Backend status: {apiStatus}. Local Ollama is used for free script generation. Voice, visual generation and MP4 rendering are not connected yet.</div></div></div>}
  </main></div>
+}
+
+export default function App(){
+ const [auth,setAuth]=useState('checking');
+ const [loginId,setLoginId]=useState('');
+ const [password,setPassword]=useState('');
+ const [error,setError]=useState('');
+ const [busy,setBusy]=useState(false);
+ useEffect(()=>{getAuthStatus().then(x=>setAuth(x.authenticated?'signed-in':'signed-out')).catch(()=>setAuth('offline'));},[]);
+ const submit=async(e)=>{e.preventDefault();setBusy(true);setError('');try{await login(loginId,password);setPassword('');setAuth('signed-in');}catch(err){setError(err.message);}finally{setBusy(false);}};
+ const signOut=async()=>{try{await logout();}finally{setAuth('signed-out');}};
+ if(auth==='checking') return <div className="auth-screen"><div className="auth-card"><div className="brand-icon"><Clapperboard/></div><h1>MyInfo AI Studio</h1><p>Checking secure session…</p></div></div>;
+ if(auth==='offline') return <div className="auth-screen"><div className="auth-card"><h1>MyInfo AI Studio</h1><p>Login service is unavailable. Please check the website API connection.</p></div></div>;
+ if(auth==='signed-out') return <div className="auth-screen"><form className="auth-card" onSubmit={submit}><div className="brand-icon"><Clapperboard/></div><div className="eyebrow">PRIVATE CREATOR WORKSPACE</div><h1>Welcome back</h1><p>Sign in to access your Hindi storytelling studio.</p><label htmlFor="login-id">LOGIN ID</label><input id="login-id" autoComplete="username" value={loginId} onChange={e=>setLoginId(e.target.value)} required placeholder="Enter your login ID"/><label htmlFor="login-password">PASSWORD</label><input id="login-password" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required placeholder="Enter your password"/>{error&&<div className="notice">{error}</div>}<button className="primary" disabled={busy}>{busy?'Signing in…':'Sign in'} <ChevronRight size={17}/></button><small>Your account is protected by a server-side login session.</small></form></div>;
+ return <><div className="session-bar"><span>Signed in securely</span><button onClick={signOut}>Log out</button></div><StudioApp onLogout={signOut}/></>;
 }
