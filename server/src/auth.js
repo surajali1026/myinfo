@@ -38,12 +38,12 @@ export function login(req, res) {
   const payload = Buffer.from(JSON.stringify({ sub: username, exp: Math.floor(Date.now() / 1000) + DAY })).toString('base64url');
   const token = payload + '.' + sign(payload);
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', COOKIE + '=' + encodeURIComponent(token) + '; HttpOnly; SameSite=Lax; Path=/; Max-Age=' + DAY + secure);
+  res.setHeader('Set-Cookie', COOKIE + '=' + encodeURIComponent(token) + '; HttpOnly; SameSite=None; Path=/; Max-Age=' + DAY + secure);
   return res.json({ ok: true, user: username });
 }
 export function logout(_req, res) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', COOKIE + '=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' + secure);
+  res.setHeader('Set-Cookie', COOKIE + '=; HttpOnly; SameSite=None; Path=/; Max-Age=0' + secure);
   res.json({ ok: true });
 }
 export function requireAuth(req, res, next) {
