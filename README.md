@@ -85,3 +85,33 @@ The local API is not hosted by GitHub Pages. To use the site from a phone, deplo
 - Video duration choices: 1 minute or 2 minutes.
 - Target narration length: approximately 120–150 Hindi words for 1 minute and 240–300 for 2 minutes.
 - The current Ollama backend still requires a computer. A phone-friendly hosted generation and rendering workflow has not yet been implemented.
+
+## November 2026 — Hindi cinematic long-form build
+
+The active development branch is `feature/hindi-cinematic-longform`.
+
+### Selected creator defaults
+- Language: Hindi (Devanagari)
+- Topics: mixed informative / educational
+- Target duration: 8–12 minutes
+- Visual direction: realistic documentary / cinematic storytelling
+- Initial delivery target: downloadable video file for phone; YouTube upload and OAuth are intentionally out of scope for this phase.
+
+### Implemented in this branch
+- [x] Studio defaults changed to 8–12 minute Hindi videos and realistic documentary visuals.
+- [x] Script prompt expanded for approximately 1,000–1,400 Hindi words and 18–28 cinematic scene descriptions.
+- [x] Longer narration accepted by the TTS API (up to 12,000 characters).
+- [x] Scene prompts now request continuity, shot variety, and subtle camera movement guidance.
+
+### Still required before the system meets the full brief
+- [ ] Source YouTube URL intake and reliable transcript/caption retrieval. A URL must not be treated as if its contents were read unless transcript retrieval succeeds.
+- [ ] Source-aware research and fact-checking; scripts must be original summaries/explanations, not copied narration.
+- [ ] User-consented voice sample recording/upload and a real voice-cloning provider or self-hosted model. Current Gemini TTS uses preset voices and is **not** a clone of the creator's voice.
+- [ ] Animated motion footage. Current FLUX integration generates still images; camera-movement instructions alone do not create moving footage.
+- [ ] Timed word/phrase subtitles (SRT/VTT) rather than scene-level caption overlays.
+- [ ] Server-side FFmpeg rendering to MP4 with narration, licensed music, transitions, and captions. The current browser export is WebM, not MP4.
+- [ ] Mobile testing for long scripts, large assets, memory use, and reliable downloads.
+- [ ] Persistent project storage and resumable background jobs.
+
+### Cost and provider constraints
+The project will prefer free tiers and open-source components, but a guaranteed unlimited, high-quality 8–12 minute cinematic video and voice clone cannot be promised at ₹0. Provider free quotas, rate limits, and hosting limits apply. No paid provider or paid fallback should be activated without the user's explicit approval.
