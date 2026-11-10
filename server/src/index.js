@@ -52,6 +52,55 @@ app.post('/api/scripts', requireAuth, async (req, res) => {
   }
 });
 
+
+app.post('/api/voice', requireAuth, async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+  const voice = req.body?.voice === 'female' ? 'Kore' : 'Puck';
+  if (!text || text.length > 5000) return res.status(400).json({ error: 'Narration must be between 1 and 5000 characters.' });
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return res.status(503).json({ error: 'Gemini API is not configured.' });
+  try {
+    const model = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts';
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'Read the following Hindi narration naturally and clearly in Hindi. Do not translate, summarize, or add words.\n\n' + text }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
+        }
+      }),
+      signal: AbortSignal.timeout(180000)
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = payload.error?.message || 'Gemini TTS request failed (' + response.status + ').';
+      const status = response.status === 429 ? 429 : response.status === 401 || response.status === 403 ? response.status : 502;
+      return res.status(status).json({ error: 'Hindi voice generation failed.', detail: message.slice(0, 500) });
+    }
+    const parts = payload.candidates?.[0]?.content?.parts || [];
+    const audioPart = parts.find(part => part.inlineData?.data && part.inlineData?.mimeType?.toLowerCase().includes('audio'));
+    if (!audioPart) return res.status(502).json({ error: 'Gemini returned no audio.', detail: 'Try a shorter narration or check the TTS model availability for your API key.' });
+    const pcm = Buffer.from(audioPart.inlineData.data, 'base64');
+    const sampleRateMatch = /rate=(\\d+)/i.exec(audioPart.inlineData.mimeType || '');
+    const sampleRate = sampleRateMatch ? Number(sampleRateMatch[1]) : 24000;
+    const wavHeader = Buffer.alloc(44);
+    wavHeader.write('RIFF', 0); wavHeader.writeUInt32LE(36 + pcm.length, 4); wavHeader.write('WAVE', 8);
+    wavHeader.write('fmt ', 12); wavHeader.writeUInt32LE(16, 16); wavHeader.writeUInt16LE(1, 20);
+    wavHeader.writeUInt16LE(1, 22); wavHeader.writeUInt32LE(sampleRate, 24);
+    wavHeader.writeUInt32LE(sampleRate * 2, 28); wavHeader.writeUInt16LE(2, 32);
+    wavHeader.writeUInt16LE(16, 34); wavHeader.write('data', 36); wavHeader.writeUInt32LE(pcm.length, 40);
+    res.set('Content-Type', 'audio/wav');
+    res.set('Content-Length', String(wavHeader.length + pcm.length));
+    res.set('Cache-Control', 'private, no-store');
+    return res.send(Buffer.concat([wavHeader, pcm]));
+  } catch (error) {
+    console.error('[gemini-tts]', error);
+    return res.status(502).json({ error: 'Hindi voice generation failed.', detail: error.name === 'TimeoutError' ? 'The voice request timed out. Try a shorter script.' : error.message });
+  }
+});
+
 app.post('/api/images', requireAuth, async (req, res) => {
   const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
   const format = typeof req.body?.format === 'string' ? req.body.format : '';
