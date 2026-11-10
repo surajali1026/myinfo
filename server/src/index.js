@@ -30,7 +30,7 @@ app.get('/api/health', async (_req, res) => {
     authConfigured: authConfigured(),
     capabilities: {
       scriptGeneration: ai.available,
-      voiceover: false,
+      voiceover: Boolean(process.env.GEMINI_API_KEY),
       visualGeneration: cloudflareImagesConfigured(),
       imageProvider: cloudflareImagesConfigured() ? 'Cloudflare Workers AI (FLUX.1 schnell)' : null,
       mp4Rendering: false
