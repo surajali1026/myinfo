@@ -1,5 +1,5 @@
 const apiKey = process.env.GEMINI_API_KEY || '';
-const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 
 export async function aiReady() {
   return {
