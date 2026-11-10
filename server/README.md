@@ -1,17 +1,19 @@
 # MyInfo AI Video Studio — API
 
-## Important: what “free” means
+## Important: free-tier limits and current scope
 
-This first backend uses **Ollama running locally** for script and scene-plan generation. Ollama's local HTTP API does not require a paid API key. It still uses your own computer's CPU/RAM/GPU and electricity. It is not a hosted cloud service, and a phone-only workflow cannot run this backend reliably by itself.
+The backend generates a structured Hindi script and scene plan. It can generate scene images through Cloudflare Workers AI when the Cloudflare credentials are configured. Voiceover audio files, subtitles as downloadable files, FFmpeg MP4 rendering, persistent media storage, and automatic YouTube upload/scheduling are not implemented yet.
 
-The current backend generates a structured script and scene plan only. Voiceover, image/video generation, stock-media licensing checks, FFmpeg rendering, persistent jobs, and MP4 exports are not implemented yet. No fake “video complete” status is shown.
+Cloudflare Workers AI's Free Workers plan currently includes 10,000 Neurons per day at no charge. The daily allowance resets at 00:00 UTC. When the free allowance is exceeded, further requests fail unless the account is moved to a paid plan. This application does not enable paid billing, prepaid credits, or paid fallback providers. Free quotas and provider terms can change; check Cloudflare's current pricing before use.
+
+Image provider: `@cf/black-forest-labs/flux-1-schnell`. The model's documented REST request accepts a prompt and steps (up to 8); this integration uses 4 steps. The model endpoint's documented input does not expose a width/height setting, so the requested format is included as composition guidance in the prompt, not a guaranteed pixel-dimension switch.
 
 ## Requirements
 
 - Node.js 20+
-- Ollama installed on the same machine as this API
-- A model downloaded, e.g. `ollama pull llama3.2`
-- For later rendering: FFmpeg, a speech engine such as Piper, and licensed/generated visual assets
+- Cloudflare account with Workers AI available on the Free plan
+- Cloudflare Account ID and API token with Workers AI access
+- Existing script-generation provider configuration
 
 ## Run
 
@@ -26,58 +28,41 @@ Check `http://localhost:8787/api/health`.
 
 ## API
 
-- `GET /api/health` — service and local model status
+- `GET /api/health` — service, script model and image-provider configuration status
 - `POST /api/scripts` — generate a script and scene plan
-
-Example request:
-
-```json
-{
-  "topic": "The history of the pyramids",
-  "language": "English",
-  "style": "Mixed styles",
-  "duration": "10–15 minutes",
-  "format": "Both formats"
-}
-```
+- `POST /api/images` — authenticated Cloudflare FLUX.1 schnell image generation
 
 ## Connect the frontend
 
-Set `VITE_API_BASE_URL=http://localhost:8787` in the frontend environment. Do not expose secret provider keys in Vite variables. Vite variables are public in the browser bundle.
+Set `VITE_API_BASE_URL=http://localhost:8787` in the frontend environment. Do not expose provider keys in Vite variables or browser code.
 
 ## Production security checklist
 
-Before public deployment, add authentication, per-user quotas, durable job queue and database, request rate limits, secure CORS allowlist, file validation, storage lifecycle rules, moderation, cost ceilings, and server-side secret management. Do not expose Ollama directly to the public internet.
-
+Before public deployment, add per-user quotas, durable job queue and database, request rate limits, secure CORS allowlist, file validation, storage lifecycle rules, moderation, and cost ceilings. Keep provider secrets only in the API host's private environment settings.
 
 ## Private login setup
 
-The studio now has a login screen and the script-generation endpoint requires a valid signed, HttpOnly session cookie. Credentials are read only from server environment variables; never commit them to GitHub.
+The studio uses a login screen and script/image endpoints require a valid signed, HttpOnly session cookie. Credentials are read only from server environment variables; never commit them to GitHub.
 
 Required private API-host variables:
 - `ADMIN_USERNAME`: your chosen login ID
-- `ADMIN_PASSWORD_HASH`: scrypt hash in `salt:hexhash` format
+- `ADMIN_PASSWORD_HASH`: scrypt hash in `salt:hexhash` format (or use the supported private password variable already configured on your host)
 - `AUTH_SECRET`: long random signing secret
 - `FRONTEND_ORIGIN`: exact HTTPS origin of the deployed website
 
-Generate a password hash and signing secret on a trusted computer using `node server/scripts/create-login-secrets.js`, then add the printed values to the API host's private environment settings. The helper asks for a password and requires at least 12 characters. Do not paste passwords or generated secrets into source files, GitHub issues, or chat. The sample `.env.example` contains placeholders only.
+Do not paste passwords or generated secrets into source files, GitHub issues, or chat. Use HTTPS in production. The browser session is HttpOnly and expires after 12 hours.
 
-The login protection is not active until all three authentication variables are configured on the deployed API. Use HTTPS in production. The browser session is HttpOnly and expires after 12 hours.
+## Cloudflare Workers AI image setup
+
+Add these two variables privately in Render → your API service → Environment:
+
+- `CLOUDFLARE_ACCOUNT_ID`: your Cloudflare Account ID
+- `CLOUDFLARE_API_TOKEN`: a private API token with Workers AI access
+
+Use Cloudflare's Free Workers plan only. Do not enable Workers Paid, add prepaid AI Gateway credits, or configure a paid fallback. The server calls the documented Cloudflare REST endpoint and never exposes the token to the browser. Check `GET /api/health`: `capabilities.visualGeneration` becomes true when both variables are present.
+
+Cloudflare documents 10,000 Neurons/day on the Free plan and says requests fail after the free limit is reached. Rate and allowance are subject to Cloudflare changes. Image generation is not guaranteed to meet a fixed daily video count.
 
 ## Current voice/video status
 
-Male and female Hindi voice selection is present as a preference in the story brief. Actual text-to-speech audio generation, generated visuals, subtitles as files, and MP4 rendering are not implemented yet. Do not treat the voice selector as a working voice generator.
-
-
-## AI scene image generation (optional)
-
-The authenticated `POST /api/images` endpoint proxies image requests through Pollinations so the secret stays on the server. The studio has per-scene and generate-all controls. Add these variables privately in Render:
-
-- `POLLINATIONS_API_KEY`: a secret key from Pollinations
-- `POLLINATIONS_IMAGE_MODEL`: optional model id; defaults to `flux`
-
-**Cost warning:** Pollinations requires an API key for generation. Usage can consume the account's Pollen/credits; do not assume it is free. Check the current balance and model pricing before generating multiple scenes. Never put the key in frontend code or GitHub. Image generation is optional; without the key, the button returns a clear setup message.
-
-## Current production limits
-
-The browser can preview Hindi narration using device-installed speech voices, but this is not a downloadable audio file and the selected gender cannot be guaranteed. AI image generation is available only after the Pollinations key is configured. MP4 rendering, persistent media storage, and automatic YouTube upload/scheduling are still not implemented. Do not promise a finished MP4 or automated publishing until those components are built and tested.
+The browser can preview Hindi narration using device-installed speech voices, but this is not a downloadable audio file and the selected gender cannot be guaranteed. Actual text-to-speech audio generation, subtitle exports, MP4 rendering, persistent media storage, and automatic YouTube upload/scheduling are not implemented. Do not promise a finished MP4 or automated publishing until those components are built and tested.
