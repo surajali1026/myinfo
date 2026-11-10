@@ -14,3 +14,17 @@ export async function logout() { return request('/api/auth/logout', { method: 'P
 export async function generateScript(options) {
   return request('/api/scripts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options) });
 }
+
+export async function generateSceneImage(prompt) {
+  const response = await fetch(API_BASE + '/api/images', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || data.error || 'Image generation failed.');
+  }
+  return URL.createObjectURL(await response.blob());
+}
