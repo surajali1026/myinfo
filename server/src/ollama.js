@@ -29,16 +29,16 @@ const schema = {
   required: ['title','description','language','estimatedMinutes','narration','scenes']
 };
 
-export async function generateVideoPlan({ topic, language = 'English', style = 'Mixed styles', duration = '10–15 minutes', format = 'Both formats' }) {
+export async function generateVideoPlan({ topic, language = 'Hindi', style = 'Mixed styles', duration = '2 minutes', format = 'Both formats' }) {
   const subject = topic?.trim() || 'Choose a compelling, well-known educational topic suitable for a general audience';
   const prompt = [
     'Create a complete, original, factual, engaging faceless video production plan.',
     'Return ONLY JSON matching the supplied schema. Do not use markdown fences.',
-    'Target runtime: ' + duration + '. Write a substantial voiceover script suitable for the target runtime; do not claim a short script is 10–15 minutes.',
-    'Language: ' + language + '. Style: ' + style + '. Output aspect ratios: ' + format + '.',
+    'Target runtime: ' + duration + '. Write a concise storytelling voiceover that fits this exact runtime. For 1 minute target about 120–150 Hindi words; for 2 minutes target about 240–300 Hindi words.',
+    'The story language MUST be Hindi (Devanagari script) only. Do not write narration in English or Bengali. Style: ' + style + '. Output aspect ratios: ' + format + '.',
     'Topic or topic preference: ' + subject + '.',
     'If no topic is supplied, choose one specific evergreen topic and make the title reflect it.',
-    'Create 8–14 scenes with continuous narration. Each scene needs a detailed visualPrompt suitable for a legal-to-use generated visual, concise onScreenText, and a seconds estimate.',
+    'Create 4–8 short scenes with continuous narration. Each scene needs a detailed visualPrompt suitable for a legal-to-use generated visual, concise onScreenText, and a seconds estimate. Keep scene seconds within the selected total runtime.',
     'Avoid fabricated facts, fake quotations, and copyrighted characters. Mark uncertainty instead of inventing specifics.',
     'The narration field must contain the full continuous voiceover script. Include a hook, clear sections, transitions, and a conclusion.'
   ].join('\n');
