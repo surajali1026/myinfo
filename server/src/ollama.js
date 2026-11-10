@@ -33,7 +33,7 @@ export async function generateVideoPlan({ topic, language = 'Hindi', style = 'Mi
     'Create a complete, original, factual, engaging faceless video production plan.',
     'Return ONLY valid JSON matching this schema: ' + JSON.stringify(schema),
     'Target runtime: ' + duration + '. Write a concise storytelling voiceover that fits this exact runtime. For 1 minute target about 120–150 Hindi words; for 2 minutes target about 240–300 Hindi words.',
-    'The story language MUST be Hindi (Devanagari script) only. Do not write narration in English or Bengali. Style: ' + style + '. Output aspect ratios: ' + format + '. Preferred voice for later voiceover: ' + voicePreference + '.',
+    'The story language MUST be Hindi (Devanagari script) only. Do not write narration in English or Bengali. Visual style: ' + style + '. If the selected style is Mixed styles (auto by story), choose the most suitable visual treatment for each scene from realistic documentary, 3D animation, and cinematic storytelling based on the story content, while keeping character and visual continuity. If a single style is selected, apply it consistently to every scene. Output aspect ratios: ' + format + '. Preferred voice for later voiceover: ' + voicePreference + '.',
     'Topic or topic preference: ' + subject + '.',
     'If no topic is supplied, choose one specific evergreen topic and make the title reflect it.',
     'Create 4–8 short scenes with continuous narration. Each scene needs a detailed visualPrompt suitable for a legal-to-use generated visual, concise onScreenText, and a seconds estimate. Keep scene seconds within the selected total runtime.',
