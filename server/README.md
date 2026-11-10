@@ -67,3 +67,17 @@ The login protection is not active until all three authentication variables are 
 ## Current voice/video status
 
 Male and female Hindi voice selection is present as a preference in the story brief. Actual text-to-speech audio generation, generated visuals, subtitles as files, and MP4 rendering are not implemented yet. Do not treat the voice selector as a working voice generator.
+
+
+## AI scene image generation (optional)
+
+The authenticated `POST /api/images` endpoint proxies image requests through Pollinations so the secret stays on the server. The studio has per-scene and generate-all controls. Add these variables privately in Render:
+
+- `POLLINATIONS_API_KEY`: a secret key from Pollinations
+- `POLLINATIONS_IMAGE_MODEL`: optional model id; defaults to `flux`
+
+**Cost warning:** Pollinations requires an API key for generation. Usage can consume the account's Pollen/credits; do not assume it is free. Check the current balance and model pricing before generating multiple scenes. Never put the key in frontend code or GitHub. Image generation is optional; without the key, the button returns a clear setup message.
+
+## Current production limits
+
+The browser can preview Hindi narration using device-installed speech voices, but this is not a downloadable audio file and the selected gender cannot be guaranteed. AI image generation is available only after the Pollinations key is configured. MP4 rendering, persistent media storage, and automatic YouTube upload/scheduling are still not implemented. Do not promise a finished MP4 or automated publishing until those components are built and tested.
